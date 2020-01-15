@@ -4,5 +4,8 @@ A docassemble extension.
 
 ## Author
 
-System Administrator, admin@admin.com
+LSC Hackathon Group:
+Dorna Moini, dorna@documate.org
+Michael Hofrichter, michael.hofrichter@hvlp.org
+Kate Frank, kfrank@nhlegal.org
 
