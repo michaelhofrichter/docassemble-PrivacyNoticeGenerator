@@ -1,0 +1,168 @@
+code: multi_user = True
+mandatory: True
+---
+metadata:
+  short title: Privacy Statement Workflow
+  title: Privacy Statement Workflow
+---
+features:
+  css: 'https://hsldocassemble.s3-us-west-1.amazonaws.com/assets/documatecss.css'
+  question back button: True
+---
+modules:
+  - docassemble.base.util
+  - docassemble.numberstowords.numbers_to_words
+  - docassemble.commalist.commalist
+---
+mandatory: True
+code: |
+  log('loading up documate variables that were passed.')
+  import dateutil.parser
+  from docassemble.base.util import DADateTime
+
+  other_statements = []
+
+  for key in url_args:
+    try:
+      if key.startswith('documate_'):
+        log('processing key - ' + key)
+        the_variable_name = key[9:]
+        if(url_args[key].startswith('DADict') and url_args[key].endswith('})')):
+          variable_statement = the_variable_name + ' = ' + url_args[key]
+          other_statements.append(variable_statement)
+          other_statements.append(the_variable_name + ".there_are_any = True")
+        elif('dateutil.parser.parse' in url_args[key]):
+          variable_statement = the_variable_name + ' = ' + url_args[key]
+          other_statements.append(variable_statement)
+          variable_statement = the_variable_name + ' = DADateTime(' + the_variable_name + '.year'
+          variable_statement += ', month=' + the_variable_name + '.month'
+          variable_statement += ', day=' + the_variable_name + '.day'
+          variable_statement += ', hour=' + the_variable_name + '.hour'
+          variable_statement += ', minute=' + the_variable_name + '.minute'
+          variable_statement += ', second=' + the_variable_name + '.second'
+          variable_statement += ', microsecond=' + the_variable_name + '.microsecond'
+          variable_statement += ', tzinfo=' + the_variable_name + '.tzinfo)'
+          other_statements.append(variable_statement)
+        elif('.there_are_any' in key or url_args[key] == 'True'):
+          variable_statement = the_variable_name + ' = ' + url_args[key]
+          other_statements.append(variable_statement)
+        else:
+          variable_statement = the_variable_name + ' = """' + url_args[key] + '"""'
+          other_statements.append(variable_statement)
+    except Exception as err:
+      log('Got an error trying to set a variable', err)
+      pass
+
+  for statement in other_statements:
+    log('exec - ' + statement)
+    exec(statement)
+    log('execed - ' + statement)
+---
+field: hsl_field_4432818791
+question: Introduction
+subquestion: First we will ask you about the data you collect from your users.
+---
+fields:
+  - "Consideration must be taken when collecting user data. While we might think data collection is a trivial matter right now, we’re starting to see that the long-term impacts are ones we can’t predict. Vulnerable populations have few choices in what services to use. It is best to collect only the information you need, and you should have a good reason to do so.\n\nDo you really need to collect this data to help your user?": storing_answers_is_necessary
+    datatype: yesnoradio
+    required: False
+need:
+  - hsl_field_4432818791
+question: Data
+---
+fields:
+  - 'Why do you need to collect this information? ': reasons_to_store_answers
+    choices:
+      - We are collecting this information to analyze usage so we can make improvements.: We are collecting this information to analyze usage so we can make improvements.
+      - We want to show our funders that we are achieving our goal.: We want to show our funders that we are achieving our goal.
+    datatype: checkboxes
+    none of the above: false
+  - 'Using complete sentences, please list any additional reasons why you are collecting information from your users.': reasons_to_store_answers_other
+    datatype: area
+    required: False
+need:
+  - storing_answers_is_necessary
+question: Reasons
+---
+fields:
+  - Will the information be stored?: answers_will_be_stored
+    datatype: yesnoradio
+  - 'Where will the information be stored? ': storage_devices
+    choices:
+      - User device: User device
+      - Server: Server
+    datatype: checkboxes
+    none of the above: false
+    show if:
+      is: True
+      variable: answers_will_be_stored
+  - 'Is the server encrypted at rest? If you don''t know, check with your IT person.': storage_is_encyrpted
+    datatype: yesnoradio
+    show if: 'storage_devices["User device"]'
+  - 'Is your site an HTTPS site, (which encrypts data as it goes to the server)?': uses_HTTPS
+    datatype: yesnoradio
+    show if: 'storage_devices["Server"]'
+need:
+  - page_condition_9116268513
+question: Storage
+---
+code: |
+  page_condition_9116268513 = ''
+  if answers_will_be_stored != True:
+    storage_devices = DADict('storage_devices', elements={'User device': False,'Server': False})
+  if storage_devices["User device"] != True:
+    storage_is_encyrpted = ''
+  if storage_devices["Server"] != True:
+    uses_HTTPS = ''
+field: page_condition_9116268513
+need:
+  - reasons_to_store_answers
+  - reasons_to_store_answers_other
+---
+field: review_answers
+mandatory: True
+need:
+  - answers_will_be_stored
+  - storage_devices
+  - storage_is_encyrpted
+  - uses_HTTPS
+question: Please review your answers below. Click the green bubble on the right to change your prior answers.
+review:
+  - note: '####Introduction'
+  - note: '####Data'
+  - Change Answer: storing_answers_is_necessary
+    button: |-
+      **Consideration must be taken when collecting user data. While we might think data collection is a trivial matter right now, we’re starting to see that the long-term impacts are ones we can’t predict. Vulnerable populations have few choices in what services to use. It is best to collect only the information you need, and you should have a good reason to do so.
+
+      Do you really need to collect this data to help your user?**: ${ storing_answers_is_necessary }
+  - note: '####Reasons'
+  - Change Answer: reasons_to_store_answers
+    button: '**Why do you need to collect this information? **: ${ reasons_to_store_answers.true_values() }'
+  - Change Answer: reasons_to_store_answers_other
+    button: '**Using complete sentences, please list any additional reasons why you are collecting information from your users.**: ${ reasons_to_store_answers_other }'
+  - note: '####Storage'
+  - Change Answer: answers_will_be_stored
+    button: '**Will the information be stored?**: ${ answers_will_be_stored }'
+  - Change Answer: storage_devices
+    button: '**Where will the information be stored? **: ${ storage_devices.true_values() }'
+  - Change Answer: storage_is_encyrpted
+    button: '**Is the server encrypted at rest? If you don''t know, check with your IT person.**: ${ storage_is_encyrpted }'
+  - Change Answer: uses_HTTPS
+    button: '**Is your site an HTTPS site, (which encrypts data as it goes to the server)?**: ${ uses_HTTPS }'
+---
+attachment:
+  docx template file: Privacy_Notice.docx
+  filename: Privacy_Notice
+  name: Privacy_Notice
+  variable name: Privacy_Notice
+---
+code: completed_at = current_datetime()
+mandatory: True
+---
+code: |
+  #hslPreAttachment
+---
+allow downloading: True
+attachment code: '[Privacy_Notice]'
+mandatory: True
+question: Here are your documents!
